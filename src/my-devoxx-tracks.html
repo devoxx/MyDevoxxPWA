@@ -1,0 +1,397 @@
+<!--
+@license MIT
+Copyright (c) 2016 Horacio "LostInBrittany" Gonzalez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/app-storage/app-indexeddb-mirror/app-indexeddb-mirror.html">
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles-classes.html">
+<link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
+
+<link rel="import" href="my-devoxx-api-behavior.html">
+<link rel="import" href="my-devoxx-talk-in-list.html">
+<link rel="import" href="my-devoxx-icons.html">
+
+<dom-module is="my-devoxx-tracks">
+	<template>
+		<style include="shared-styles">
+			:host {
+				display: block;
+				width: 100%;
+				height: 100%;
+				background-color: var(--paper-grey-100);
+			}
+			
+			paper-toolbar {
+				font-size: 1rem;
+				--paper-toolbar-height: 45px;
+			}
+			
+			paper-toolbar paper-button {
+				padding: 0.5em 0.5em;
+				margin: 0;
+				height: 100%;
+				--paper-button-flat-keyboard-focus: {
+					font-weight: normal;
+				}
+			}
+			
+			paper-toolbar paper-button[disabled] {
+				color: var(--app-contrast-color);
+				border-radius: 0;
+				background-color: transparent;
+				border-bottom: solid 2px var(--app-contrast-color);
+			}
+			
+			@media (max-width: 410px) {
+				paper-toolbar {
+					font-size: 0.75rem;
+				}
+			}
+			
+			.slot {
+				margin-top: 3vh;
+				margin-bottom: 3vh;
+			}
+			
+			.slotTime {
+				margin-bottom: 1vh;
+				color: var(--app-secondary-color);
+				font-size: 0.75rem;
+				font-weight: bold;
+			}
+			
+			.slotTitle {
+				@apply(--layout-horizontal);
+			}
+			
+			.slotIcon {
+				width: 10%;
+				height: 100%;
+				margin-right: 5%;
+				--iron-icon-width: 10%;
+			}
+			
+			.slotHeader {
+				@apply(--layout-verticcal);
+				@apply(--layout-flex);
+			}
+			
+			.slotInTracks {
+				font-size: 0.75rem;
+				color: var(--paper-grey-500);
+			}
+			
+			.content {
+				width: 90%;
+				margin: 0 auto;
+				max-width: 960px;
+			}
+		</style>
+
+		<app-route route="{{subroute}}" pattern="/:track" data="{{trackRouteElementData}}" tail="{{subrouteElement}}"></app-route>
+
+		<paper-header-panel>
+			<paper-toolbar justify="around">
+				<template is="dom-repeat" items="[[conferenceDays]]" as="track">
+					<paper-button disabled$="[[track.disabled]]" on-tap="_selectDay">[[_shortDay(track.track,track.title)]]</paper-button>
+				</template>
+			</paper-toolbar>
+
+			-[[stringify(tracksLiveData)]] -
+
+			<div class="content fit">
+				<template is="dom-if" if "[[_hasSlots]]">
+					<template is="dom-repeat" items="[[slots]]" as="slot">
+						<div class="slot">
+							<div class="slotTime">{{slot.slotTime}}</div>
+							<div class="slotTitle">
+								<template is="dom-if" if="{{slot.talk}}">
+									<iron-icon class="slotIcon" icon="totrack"></iron-icon>
+									<div class="slotHeader">
+										<div>{{_numberOfTalks(slot.items)}} talks</div>
+										<div class="slotInTracks">in {{_tracksInSlot(slot.items)}} tracks</div>
+									</div>
+									<paper-icon-button icon="[[_folderedIcon(slot)]]" on-click="_doToggleFoldered"></paper-icon-button>
+								</template>
+								<template is="dom-if" if="{{slot.break}}">
+									<iron-icon class="slotIcon" icon="devoxx:cafe"></iron-icon>
+									<div class="slotHeader">
+										{{slot.breakName}}
+									</div>
+								</template>
+							</div>
+							<template is="dom-if" if="[[_showSlotContent(slot)]]">
+								<div class="slotContent">
+									<template is="dom-repeat" items="[[slot.items]]" as="item">
+										<my-devoxx-talk-in-list slot="[[item]]" icon-url-root="[[_iconUrlRoot]]" conference-api-root="[[conferenceApiRoot]]" tracks="[[tracks]]"
+											speakers="[[speakers]]" show-track></my-devoxx-talk-in-list>
+									</template>
+								</div>
+							</template>
+						</div>
+					</template>
+				</template>
+			</div>
+
+		</paper-header-panel>
+
+		<iron-ajax id="tracksDayRequest" url="{{urlTracks}}{{activeDay}}" last-response="{{trackLiveData}}"></iron-ajax>
+		<app-indexeddb-mirror key="tracks-{{country}}-{{activeDay}}" data="{{trackLiveData}}" persisted-data="{{trackData}}"></app-indexeddb-mirror>
+
+	</template>
+
+	<script>
+    Polymer({
+      is: 'my-devoxx-tracks',
+
+      behaviors: [
+        ApiBehavior
+      ],
+
+      properties: {
+
+        urlTrack: {
+          type: String,
+          computed: "_getUrlTrack(conferenceApiRoot)"
+        },
+
+        conferenceDays: {
+          type: Array,        
+        },        
+
+        activeDay: {
+          type: String,
+        },
+
+        slots: {
+          type: Array,
+        },
+        subroute: {
+          type: Object
+        },
+        
+        _hasSlots: {
+          type: Boolean,
+          computed: "_getHasSlots(slots)"
+        },
+      },
+      observers: [
+        "_onUrlTracksChange(urlTracks)",
+				'_trackRouteElementChanged(trackRouteElementData.track, conferenceDays)',
+				'_onTrackDataChange(trackData, trackData.*)',
+      ],
+
+      // *********************************************************************
+      // Observers
+      // *********************************************************************
+      _onUrlTracksChange: function () {
+        // console.debug("[my-devoxx-tracks] _onUrlTracksChange", this.urlTracks)
+      },
+      _trackRouteElementChanged: function() {
+        console.debug("[my-devoxx-tracks] _trackRouteElementChanged", this.trackRouteElementData.track, this.conferenceDays);
+
+        var activeDayFound = -1;
+        for (var i in this.conferenceDays) {
+          if (this.trackRouteElementData.track == this.conferenceDays[i].track) {
+            activeDayFound = i;
+          }
+        }
+        console.debug("[my-devoxx-tracks] _trackRouteElementChanged activeDayFound", activeDayFound);
+        if (activeDayFound >= 0) {
+             this._selectDay({ model: { index: activeDayFound}});
+        } else {
+           this._selectDay({ model: { index: 0}});
+        }
+      },
+      _onTracksDataChange: function() {
+        // console.debug("[my-devoxx-tracks] _onTracksDataChange", this.tracksData);
+        if (this.tracksData && this.tracksData.links) {
+          var conferenceDays = [];
+          for (var i in this.tracksData.links) {
+            var trackElements = this.tracksData.links[i].href.split('/');
+            if (!trackElements[trackElements.length-1]) {
+              trackElements.pop();
+            }
+            conferenceDays.push({
+              track: trackElements[trackElements.length-1],
+              title: this.tracksData.links[i].title
+            });
+          }
+          this.conferenceDays = conferenceDays;
+         
+          console.debug("[my-devoxx-tracks] _onTracksDataChange", this.conferenceDays);
+        }
+      },		
+      _onTrackDataChange: function() {
+        this.slots = this._reorganizeTracksDayResponse(this.trackData);
+      },
+
+
+      // *********************************************************************
+      // Computed properties
+      // *********************************************************************    
+      _getUrlTrack: function() {
+        // console.debug("[my-devoxx-tracks] _getUrlTracks", this.conferenceApiRoot + "/trackss/");
+        return this.conferenceApiRoot + "/tracks/";
+      },
+      _getHasSlots: function() {
+        // console.debug("[my-devoxx-tracks] _getHasSlots");
+        return (this.slots && this.slots.length > 0);
+      },
+
+      // *********************************************************************
+      // Action listeners
+      // *********************************************************************
+      _selectDay: function(evt, detail) {
+        console.debug("[my-devoxx-tracks] _selectDay", evt.model.index);
+        for (i in this.conferenceDays) {
+          if (evt.model.index == i) {
+            this.activeDay = this.conferenceDays[i].track
+            this.set( [ 'conferenceDays',i,'disabled'], true);
+          } else {
+            this.set( [ 'conferenceDays',i,'disabled'], false);
+          }
+        }
+        this.$.tracksDayRequest.generateRequest();
+
+        var location = "#"+this.subroute.prefix+"/"+this.activeDay;
+        console.debug("[my-devoxx-tracks] _selectDay location", location);
+        window.history.pushState({}, null, location);
+        window.dispatchEvent(new CustomEvent('location-changed'));
+      },
+      _doToggleFoldered: function(evt, detail) {
+        var slot = evt.model.slot;
+        slot.foldered = !slot.foldered;
+        this.set(["slots",slot.index], {});
+        this.set(["slots",slot.index], slot);
+      },
+      // *********************************************************************
+      // Event listeners
+      // *********************************************************************
+
+
+
+
+      // *********************************************************************
+      // Other methods
+      // *********************************************************************
+      _shortDay: function(track, title) {
+        var weektrack = track.substring(0,3);
+        var numtrack = title.replace(/.*track,? ([0-9]*).*/, "$1");
+        console.debug("[my-devoxx-tracks] _shortDay", [ track,title, weektrack, numtrack])
+        numtrack = Array(3-numtrack.length).join('0')+numtrack;
+        return weektrack+" "+numtrack;
+      },
+
+      _reorganizeTracksDayResponse: function(tracksDayResponse) {
+        var list = [];
+
+        // console.debug("[my-devoxx-tracks] _reorganizeTracksDayResponse tracksDayResponse", tracksDayResponse);
+        for (var i in tracksDayResponse.slots) {
+          var slotTime = tracksDayResponse.slots[i].fromTime +"-"+tracksDayResponse.slots[i].toTime;
+          var added = false;
+          for (var j in list) {
+            if (list[j].slotTime == slotTime) {
+              if (!list[j].items) {
+                list[j].items = [];
+              }
+              list[j].fromTime = tracksDayResponse.slots[i].fromTime;
+              list[j].toTime = tracksDayResponse.slots[i].toTime;
+              list[j].fromTimeMillis = tracksDayResponse.slots[i].fromTimeMillis;
+              list[j].toTimeMillis = tracksDayResponse.slots[i].toTimeMillis;
+              list[j].items.push(tracksDayResponse.slots[i]);
+              if (tracksDayResponse.slots[i].break) {
+                list[j].break = true;
+                list[j].breakName = tracksDayResponse.slots[i].break.nameEN
+              }
+              if (tracksDayResponse.slots[i].talk) {
+                list[j].talk = true;
+              }              
+              added = true;
+            }
+          } 
+          if (!added) {
+            var item = {};
+            item.index = list.length;
+            item.slotTime = slotTime;
+            item.fromTime = tracksDayResponse.slots[i].fromTime;
+            item.toTime = tracksDayResponse.slots[i].toTime;
+            item.fromTimeMillis = tracksDayResponse.slots[i].fromTimeMillis;
+            item.toTimeMillis = tracksDayResponse.slots[i].toTimeMillis;
+            item.items= [ tracksDayResponse.slots[i] ];
+            if (tracksDayResponse.slots[i].break) {
+              item.break = true;
+              item.breakName = tracksDayResponse.slots[i].break.nameEN;
+            }
+            if (tracksDayResponse.slots[i].talk) {
+              item.talk = true;
+            }                 
+            list.push(item);
+          }          
+        }        
+        // // console.debug("[my-devoxx-tracks] _reorganizeTracksDayResponse", list);
+        return list;
+      },
+      _length: function(items) {
+        if (!items) {
+          return 0;
+        }
+        return items.length;
+      },
+      _numberOfTalks: function(items) {
+        // // console.debug("[my-devoxx-tracks] _numberOfTalks", items);
+        var talks = 0;      
+        for (var i in items) {
+          if (items[i].talk) {
+            talks++
+          }
+        }
+        return talks;
+      },
+      _folderedIcon: function(slot) {
+        // console.debug("[my-devoxx-tracks] _folderedIcon", slot.foldered);
+        return (slot.foldered?"expand-more":"expand-less");
+      },
+      _isFoldered: function(slot) {
+        return !!slot.foldered;
+      },
+      _tracksInSlot: function(items) {
+        var tracks = {};
+        // console.debug("[my-devoxx-tracks] _tracksInSlot", items);        
+        for (var i in items) {
+          if (items[i].talk) {
+            if (!tracks[items[i].talk.trackId]) {
+              tracks[items[i].talk.trackId] = 0;
+            }
+            tracks[items[i].talk.trackId]++;
+          }
+        }
+        // // console.debug("[my-devoxx-tracks] _tracksInSlot", tracks);
+        return Object.keys(tracks).length;
+      },
+      _showSlotContent: function(slot) {
+        // console.debug("[my-devoxx-tracks] _showSlotContent", slot);
+        return (slot.talk && !slot.foldered);
+      },
+      stringify: function(item) {
+        return JSON.stringify(item);
+      },
+    });
+  </script>
+</dom-module>

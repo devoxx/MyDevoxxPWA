@@ -1,0 +1,23 @@
+{
+  "entrypoint": "index.html",
+  "shell": "src/my-devoxx.html",
+  "fragments": [
+    "src/my-devoxx-menu.html",
+    "src/my-devoxx-conference.html",
+    "src/my-devoxx-speaker.html",
+    "src/my-devoxx-talk.html",
+    "src/my-view404.html"
+  ],
+  "sourceGlobs": [
+    "src/**/*",
+    "fonts/**/*",
+    "images/**/*",
+    "bower_components/app-storage/app-indexeddb-mirror/*.js",
+    "bower.json"
+  ],
+  "includeDependencies": [
+    "manifest.json",
+    "data/conf.json",
+    "bower_components/webcomponentsjs/webcomponents-lite.min.js"
+  ]
+}

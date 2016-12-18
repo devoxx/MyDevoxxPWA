@@ -1,0 +1,392 @@
+<!--
+@license MIT
+Copyright (c) 2016 Horacio "LostInBrittany" Gonzalez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/app-storage/app-indexeddb-mirror/app-indexeddb-mirror.html">
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles-classes.html">
+<link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
+
+<link rel="import" href="my-devoxx-talk-in-list.html">
+<link rel="import" href="my-devoxx-icons.html">
+
+<dom-module is="my-devoxx-schedule">
+	<template>
+		<style include="shared-styles">
+			:host {
+				display: block;
+				width: 100%;
+				height: 100%;
+				background-color: var(--paper-grey-100);
+			}
+			
+ 			paper-toolbar {
+				font-size: 1rem;
+				--paper-toolbar-height: 45px;
+			}
+			
+			paper-toolbar paper-button {
+				padding: 0.5em 0.5em;
+				margin: 0;
+				height: 100%;
+				--paper-button-flat-keyboard-focus: {
+					font-weight: normal;
+				}
+			}
+			
+			paper-toolbar paper-button[disabled] {
+				color: var(--app-contrast-color);
+				border-radius: 0;
+				background-color: transparent;
+				border-bottom: solid 2px var(--app-contrast-color);
+			}
+			
+			@media (max-width: 410px) {
+				paper-toolbar {
+					font-size: 0.75rem;
+				}
+			}
+			
+			.slot {
+				margin-top: 3vh;
+				margin-bottom: 3vh;
+			}
+			
+			.slotTime {
+				margin-bottom: 1vh;
+				color: var(--app-secondary-color);
+				font-size: 0.75rem;
+				font-weight: bold;
+			}
+			
+			.slotTitle {
+				@apply(--layout-horizontal);
+			}
+			
+			.slotIcon {
+				width: 10%;
+				height: 100%;
+				margin-right: 5%;
+				--iron-icon-width: 10%;
+			}
+			
+			.slotHeader {
+				@apply(--layout-verticcal);
+				@apply(--layout-flex);
+			}
+			
+			.slotInTracks {
+				font-size: 0.75rem;
+				color: var(--paper-grey-500);
+			}
+			
+			.content {
+				width: 90%;
+				margin: 0 auto;
+				max-width: 960px;
+			}
+		</style>
+
+		<app-route route="{{subroute}}" pattern="/:day" data="{{dayRouteElementData}}" tail="{{subrouteElement}}"></app-route>
+
+		<paper-header-panel>
+			<paper-toolbar justify="around">
+				<template is="dom-repeat" items="[[_conferenceDays]]" as="day">
+					<paper-button disabled$="[[day.disabled]]" on-tap="_selectDay">[[_shortDay(day.day,day.title)]]</paper-button>
+				</template>
+			</paper-toolbar>
+
+			<div class="content fit">
+				<template is="dom-if" if "[[_hasSlots]]">
+					<template is="dom-repeat" items="[[slots]]" as="slot">
+						<div class="slot">
+							<div class="slotTime">{{slot.slotTime}}</div>
+							<div class="slotTitle">
+								<template is="dom-if" if="{{slot.talk}}">
+									<iron-icon class="slotIcon" icon="today"></iron-icon>
+									<div class="slotHeader">
+										<div>{{_numberOfTalks(slot.items)}} talks</div>
+										<div class="slotInTracks">in {{_tracksInSlot(slot.items)}} tracks</div>
+									</div>
+									<paper-icon-button icon="[[_folderedIcon(slot)]]" on-click="_doToggleFoldered"></paper-icon-button>
+								</template>
+								<template is="dom-if" if="{{slot.break}}">
+									<iron-icon class="slotIcon" icon="devoxx:cafe"></iron-icon>
+									<div class="slotHeader">
+										{{slot.breakName}}
+									</div>
+								</template>
+							</div>
+							<template is="dom-if" if="[[_showSlotContent(slot)]]">
+								<div class="slotContent">
+									<template is="dom-repeat" items="[[slot.items]]" as="item">
+										<my-devoxx-talk-in-list 
+                        slot="[[item]]" 
+                        icon-url-root="[[_iconUrlRoot]]" 
+                        country="[[country]]" 
+                        conference-api-root="[[conferenceApiRoot]]" 
+                        tracks="[[tracks]]" 
+                        speakers="[[_speakersByUuid]]" 
+                        show-track></my-devoxx-talk-in-list>
+									</template>
+								</div>
+							</template>
+						</div>
+					</template>
+				</template>
+			</div>
+
+		</paper-header-panel>
+
+	</template>
+
+	<script>
+    Polymer({
+      is: 'my-devoxx-schedule',
+
+      behaviors: [
+      ],
+
+      properties: {
+
+        name: {
+          type: String,
+          value: "schedule"
+        },
+        selected: {
+          type: String,
+        },
+        urlSchedule: {
+          type: String,
+          computed: "_getUrlSchedule(conferenceApiRoot)"
+        },
+
+        country: {
+          type: String,
+        },
+
+				schedules: {
+					type: Object,
+				},
+        dailySchedules: {
+					type: Object,
+				},
+
+				tracks: {
+					type: Object,
+				},
+				speakers: {
+					type: Object,
+				},
+        
+       
+
+        activeDay: {
+          type: String,
+          value: "",
+        },
+
+        slots: {
+          type: Array,
+        },
+        subroute: {
+          type: Object
+        },
+
+        _conferenceDays: {
+          type: Array,
+        },
+        
+        _hasSlots: {
+          type: Boolean,
+          computed: "_getHasSlots(slots)"
+        },
+        _speakersByUuid: {
+          type: Object,
+          computed: "_getSpeakersByUuid(speakers, speakers.*, country)"
+        }
+      },
+      observers: [
+        "_onSchedulesChange(schedules, schedules.*)",
+        "_onUrlScheduleChange(urlSchedule)",
+				'_dayRouteElementChanged(dayRouteElementData.day, schedules.*)',
+				'_onDailyScheduleChange(dailySchedules, dailySchedules.*, country, activeDay)',
+
+      ],
+
+      // *********************************************************************
+      // Observers
+      // *********************************************************************
+      _onUrlScheduleChange: function () {
+        // console.debug("[my-devoxx-schedule] _onUrlScheduleChange", this.urlSchedule)
+      },
+      _dayRouteElementChanged: function() {
+        if (this.selected != this.name) {
+          return;
+        }
+        if (!this.schedules || !this.country || !this.schedules[this.country]) {
+          return;
+        }
+        console.debug("[my-devoxx-schedule] _dayRouteElementChanged", this.dayRouteElementData.day, this.dailySchedules[this.country]);
+
+
+
+        var activeDayFound = -1;
+        for (var i in this.schedules[this.country]) {
+          if (this.dayRouteElementData.day == this.schedules[this.country][i].day) {
+            activeDayFound = i;
+          }
+        }
+        console.debug("[my-devoxx-schedule] _dayRouteElementChanged activeDayFound", activeDayFound);
+        if (activeDayFound >= 0) {
+             this._selectDay({ model: { index: activeDayFound}});
+        } else {
+            var location = "#/devoxx-conference/"+this.country+"/schedule/"+this.schedules[this.country][0].day;
+					  window.history.replaceState({}, null, location);
+					  window.dispatchEvent(new CustomEvent('location-changed'));
+           this._selectDay({ model: { index: 0}});
+        }
+      },
+      _onDailyScheduleChange: function() {
+        if (! this.dailySchedules || !this.country || !this.dailySchedules[this.country]) {
+          return;
+        }
+        console.debug("[my-devoxx-schedule] _onDailyScheduleChange", this.dailySchedules[this.country][this.activeDay]);
+        this.slots = this.dailySchedules[this.country][this.activeDay];
+      },
+      _onSchedulesChange: function() {
+        console.debug("[my-devoxx-schedule] _onSchedulesChange",this.schedules, this.country);
+        this._conferenceDays = this.schedules[this.country];
+      },
+      _onSpeakersChange: function() {
+        console.debug("[my-devoxx-schedule] _onSpeakersChange",this.speakers);
+      },
+
+      // *********************************************************************
+      // Computed properties
+      // *********************************************************************    
+      _getUrlSchedule: function() {
+        // console.debug("[my-devoxx-schedule] _getUrlSchedule", this.conferenceApiRoot + "/schedules/");
+        return this.conferenceApiRoot + "/schedules/";
+      },
+      _getHasSlots: function() {
+        // console.debug("[my-devoxx-schedule] _getHasSlots");
+        return (this.slots && this.slots.length > 0);
+      },
+      _getSpeakersByUuid: function() {
+        console.debug("[my-devoxx-schedule] _getSpeakersByUuid");
+        if (!this.speakers || !this.country || !this.speakers[this.country]) {
+          return {}
+        }
+        return this.speakers[this.country];
+      },
+
+      // *********************************************************************
+      // Action listeners
+      // *********************************************************************
+      _selectDay: function(evt, detail) {
+        
+        console.debug("[my-devoxx-schedule] _selectDay", evt.model.index);
+        for (i in this._conferenceDays) {
+          if (evt.model.index == i) {
+            this.activeDay = this._conferenceDays[i].day
+            this.set( [ '_conferenceDays',i,'disabled'], true);
+          } else {
+            this.set( [ '_conferenceDays',i,'disabled'], false);
+          }
+        }
+        if (this.activeDay != this.dayRouteElementData.day) {
+          var location = "#"+this.subroute.prefix+"/"+this.activeDay;
+          console.debug("[my-devoxx-schedule] _selectDay location", location);
+          window.history.pushState({}, null, location);
+          window.dispatchEvent(new CustomEvent('location-changed'));
+        }
+      },
+      _doToggleFoldered: function(evt, detail) {
+        var slot = evt.model.slot;
+        slot.foldered = !slot.foldered;
+        this.set(["slots",slot.index], {});
+        this.set(["slots",slot.index], slot);
+      },
+      // *********************************************************************
+      // Event listeners
+      // *********************************************************************
+
+
+
+
+      // *********************************************************************
+      // Other methods
+      // *********************************************************************
+      _shortDay: function(day, title) {
+        var weekday = day.substring(0,3);
+        var numday = title.replace(/.*day,? ([0-9]*).*/, "$1");
+        console.debug("[my-devoxx-schedule] _shortDay", [ day,title, weekday, numday])
+        numday = Array(3-numday.length).join('0')+numday;
+        return weekday+" "+numday;
+      },
+
+
+      _length: function(items) {
+        if (!items) {
+          return 0;
+        }
+        return items.length;
+      },
+      _numberOfTalks: function(items) {
+        // // console.debug("[my-devoxx-schedule] _numberOfTalks", items);
+        var talks = 0;      
+        for (var i in items) {
+          if (items[i].talk) {
+            talks++
+          }
+        }
+        return talks;
+      },
+      _folderedIcon: function(slot) {
+        // console.debug("[my-devoxx-schedule] _folderedIcon", slot.foldered);
+        return (slot.foldered?"expand-more":"expand-less");
+      },
+      _isFoldered: function(slot) {
+        return !!slot.foldered;
+      },
+      _tracksInSlot: function(items) {
+        var tracks = {};
+        // console.debug("[my-devoxx-schedule] _tracksInSlot", items);        
+        for (var i in items) {
+          if (items[i].talk) {
+            if (!tracks[items[i].talk.trackId]) {
+              tracks[items[i].talk.trackId] = 0;
+            }
+            tracks[items[i].talk.trackId]++;
+          }
+        }
+        // // console.debug("[my-devoxx-schedule] _tracksInSlot", tracks);
+        return Object.keys(tracks).length;
+      },
+      _showSlotContent: function(slot) {
+        // console.debug("[my-devoxx-schedule] _showSlotContent", slot);
+        return (slot.talk && !slot.foldered);
+      },
+      stringify: function(item) {
+        return JSON.stringify(item);
+      },
+    });
+  </script>
+</dom-module>

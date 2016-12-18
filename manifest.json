@@ -1,0 +1,20 @@
+{
+  "name": "My Devoxx",
+  "short_name": "My Devoxx",
+  "start_url": "./",
+  "display": "standalone",
+  "theme_color": "#FFC107",
+  "background_color": "#FFC107",
+  "icons": [
+    {
+      "src": "images/manifest/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "images/manifest/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

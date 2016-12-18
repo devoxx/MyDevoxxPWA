@@ -1,0 +1,332 @@
+<!--
+@license MIT
+Copyright (c) 2016 Horacio "LostInBrittany" Gonzalez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-storage/app-indexeddb-mirror/app-indexeddb-mirror.html">
+
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+
+<link rel="import" href="../bower_components/paper-styles/paper-styles-classes.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
+
+<link rel="import" href="my-devoxx-schedule.html">
+<link rel="import" href="my-devoxx-speakers.html">
+<link rel="import" href="my-devoxx-icons.html">
+<link rel="import" href="shared-styles.html">
+
+
+<dom-module is="my-devoxx-conference">
+	<template>
+		<style include="shared-styles">
+			:host {}
+
+			app-header-layout {
+				background-color: white;
+			}
+
+			app-header {
+				background-color: var(--app-secondary-color);
+				color: #fff;
+				font-family: "Pirulen";
+			}
+
+			app-header .main-title {
+				font-size: 1rem;
+				@apply(--layout-horizontal);
+				@apply(--layout-center);
+			}
+
+			app-header .main-title img {
+				height: 1.25rem;
+			}
+
+			app-header .main-title > div:first-child {
+				margin-right: 10px;
+			}
+
+			#bottomBar {
+				position: absolute;
+				bottom: 0;
+				width: 100%;
+				font-family: "Pirulen";
+			}
+
+			#bottomBar > div {
+				font-size: 0.75rem;
+				@apply(--layout-vertical);
+				@apply(--layout-center);
+			}
+
+			paper-toolbar > div.active {
+				color: var(--app-contrast-color);
+				border-top: solid 2px var(--app-contrast-color);
+			}
+
+			iron-pages {
+				height: calc(100% - 64px);
+				overflow-y: auto;
+			}
+
+			@media (max-width: 600px) {
+				iron-pages {
+					height: calc(100% - 56px);
+				}
+			}
+
+			@media (max-width: 410px) {
+				app-header .main-title {
+					font-size: 0.75rem;
+				}
+				app-header .main-title img {
+					height: 1em;
+				}
+				#bottomBar > div {
+					font-size: 0.5rem;
+				}
+			}
+		</style>
+
+		<my-devoxx-data-grabber
+				id="dataGrabber"
+				current-conferences = "{{currentConferences}}"
+				tracks="{{tracks}}"
+				speakers="{{speakers}}"
+				speakers-by-uuid="{{speakersByUuid}}"
+				speakers-by-first-letter="{{speakersByFirstLetter}}"
+				schedules="{{schedules}}"
+				daily-schedules="{{dailySchedules}}" ></my-devoxx-data-grabber>
+
+		<app-route route="{{subroute}}" pattern="/:country" data="{{countryRouteElementData}}" tail="{{viewRouteElement}}"></app-route>
+		<app-route route="{{viewRouteElement}}" pattern="/:view" data="{{viewRouteElementData}}" tail="{{subsubroute}}"></app-route>
+
+
+		<!-- Main content -->
+		<app-header-layout has-scrolling-region>
+
+			<app-header condenses reveals effects="waterfall">
+				<app-toolbar>
+					<div class="main-title" main-title>
+						<div>
+							<img class="devoxx" src="../images/devoxx.svg" alt="Devoxx">
+						</div>
+						<div>
+							[[_fullTextCountry]]
+						</div>
+					</div>
+					<paper-icon-button src="../images/icon/ic_search_white_24px.png"></paper-icon-button>
+					<paper-icon-button src="../images/icon/ic_filter_outline_white_24px.png"></paper-icon-button>
+					<paper-icon-button icon="more-vert"></paper-icon-button>
+
+				</app-toolbar>
+			</app-header>
+
+			<iron-pages selected="[[view]]" attr-for-selected="name" fallback-selection="schedule" role="main">
+				<my-devoxx-schedule
+						name="schedule"
+						selected="[[view]]"
+						country="[[country]]"
+						conference-api-root="[[currentApiBase]]"
+						tracks="[[localTracks]]"
+						speakers="[[speakersByUuid]]"
+						schedules="[[schedules]]"
+						daily-schedules="[[dailySchedules]]"
+						subroute="[[subsubroute]]"></my-devoxx-schedule>
+				<my-devoxx-speakers
+						name="speakers"
+						selected="[[view]]"
+						country="[[country]]"
+						conference-api-root="[[currentApiBase]]"
+						speakers="[[speakersByFirstLetter]]"
+						subroute="[[subsubroute]]"></my-devoxx-speakers>
+			</iron-pages>
+
+			<paper-toolbar id="bottomBar" justify="around">
+				<div class$="[[_isActiveView('schedule', view)]]">
+					<paper-icon-button icon="today" on-click="_goToView" data-view="schedule"></paper-icon-button>
+					<div>Schedule</div>
+				</div>
+				<!--
+				<div class$="[[_isActiveView('tracks', view)]]">
+					<paper-icon-button icon="devoxx:track" on-click="_goToView" data-view="tracks"></paper-icon-button>
+					<div>Tracks</div>
+				</div>
+				-->
+				<div class$="[[_isActiveView('speakers', view)]]">
+					<paper-icon-button icon="devoxx:speaker" on-click="_goToView" data-view="speakers"></paper-icon-button>
+					<div>Speakers</div>
+				</div>
+				<!--
+				<div class$="[[_isActiveView('map', view)]]">
+					<paper-icon-button icon="devoxx:map" on-click="_goToView" data-view="map"></paper-icon-button>
+					<div>Map</div>
+				</div>
+				-->
+			</paper-toolbar>
+
+	</template>
+	<script>
+    Polymer({
+      is: 'my-devoxx-conference',
+
+      behaviors: [
+      ],
+
+      properties: {
+        subroute: {
+          type: Object,
+        },
+				currentConferences: {
+					type: Object,
+				},
+				schedules: {
+					type: Object
+				},
+				tracks: {
+					type: Object,
+					observer: "_onTracksChange"
+				},
+				speakers: {
+					type: Object,
+				},
+        _fullTextCountry: {
+          type: String,
+          computed: "_getFullTextCountry(country)"
+        },
+				view: {
+					type: String,
+				},
+				currentApiBase: {
+					type: String,
+					computed: "_getCurrentApiBase(currentConferences, country)"
+				},
+
+      },
+      observers: [
+        '_countryRouteElementChanged(countryRouteElementData.country)',
+				'_viewRouteElementChanged(viewRouteElementData.view)',
+				'_onCurrentConferenceData(currentConferences,currentConferences.*,country)',
+        // "_onSpeakersChange(speakers, speakers.*)",
+        "_onTracksChange(tracks, tracks.*)",
+      ],
+
+      // *********************************************************************
+      // Observers
+      // *********************************************************************
+			_onCurrentConferenceData: function() {
+
+				this.debounce('_onCurrentConferenceData', function() {
+					if (this.currentConferences[this.country]) {
+						console.debug("[my-devoxx-conference] _onCurrentConferenceData - calling", this.currentConferences, this.country );
+						this.$.dataGrabber._getSchedules(this.currentConferences[this.country].apiBase);
+						this.$.dataGrabber._getTracks(this.currentConferences[this.country].apiBase);
+						this.$.dataGrabber._getSpeakers(this.currentConferences[this.country].apiBase);
+					}
+				}, 200);
+			},
+      _countryRouteElementChanged: function() {
+        console.debug("[my-devoxx-conference] _countryRouteElementChanged", this.countryRouteElementData.country);
+				if (!this.countryRouteElementData.country) {
+					this.country = 'be';
+					var location = "#/devoxx-conference/"+this.country+"/";
+					window.history.replaceState({}, null, location);
+					window.dispatchEvent(new CustomEvent('location-changed'));
+				} else {
+					this.country = this.countryRouteElementData.country
+				}
+      },
+      _viewRouteElementChanged: function() {
+        console.debug("[my-devoxx-conference] _viewRouteElementChanged", this.country, this.viewRouteElementData.view);
+				if (!this.viewRouteElementData.view) {
+        	this.view = 'schedule';
+					var location = "#/devoxx-conference/"+this.country+"/"+this.view+"/";
+					window.history.replaceState({}, null, location);
+					window.dispatchEvent(new CustomEvent('location-changed'));
+				} else {
+        	this.view = this.viewRouteElementData.view
+				}
+      },
+			_onTracksChange: function() {
+				if (this.tracks[this.country] && this.tracks[this.country].tracks) {
+					this.localTracks = this.tracks[this.country].tracks;
+				}
+				console.debug("[my-devoxx-conference] _onTracksDataChange", this.tracks);
+			},
+
+
+			// *********************************************************************
+      // Computed properties
+      // *********************************************************************
+			_getCurrentApiBase: function() {
+				if (!this.currentConferences || !this.currentConferences[this.country]) {
+					return "";
+				}
+				return this.currentConferences[this.country].apiBase;
+			},
+      _getFullTextCountry: function() {
+        console.debug("[my-devoxx-conference] _getFullTextCountry", this.country)
+        switch (this.country) {
+          case 'be': return"Belgium";
+          case 'ma': return"Morocco";
+          case 'fr': return"France";
+          case 'uk': return"UK";
+          case 'pl': return"Poland";
+          case 'us': return"USA";
+        }
+      },
+      // *********************************************************************
+      // Action listeners
+      // *********************************************************************
+			_goToView: function(evt, detail) {
+          console.debug("[my-devoxx-conference] _goToView", evt.target.getAttribute('data-view'));
+					this._fireViewChosen(this.country, evt.target.getAttribute('data-view'));
+			},
+      // *********************************************************************
+      // Event listeners
+      // *********************************************************************
+
+
+      // *********************************************************************
+      // Other methods
+      // *********************************************************************
+			_fireCountryChosen: function(country) {
+				this.fire("country-chosen", country);
+			},
+			_fireViewChosen: function(country, view) {
+				var data = {
+					country: country,
+					view: view
+				};
+				this.fire("view-chosen", data);
+			},
+			_isActiveView: function(name, view) {
+				console.debug("[my-devoxx-conference] _isActiveView", name, view);
+				if (name == view) {
+					return "active";
+				}
+			},
+      stringify: function(item) {
+        return JSON.stringify(item);
+      },
+    });
+  </script>
+</dom-module>

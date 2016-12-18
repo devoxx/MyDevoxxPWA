@@ -1,0 +1,406 @@
+<!--
+@license MIT
+Copyright (c) 2016 Horacio "LostInBrittany" Gonzalez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/app-storage/app-localstorage/app-localstorage-document.html">
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles-classes.html">
+
+<link rel="import" href="my-devoxx-icons.html">
+<link rel="import" href="shared-styles.html">
+
+
+<dom-module is="my-devoxx-data-grabber">
+	<template>
+		<style include="shared-styles">
+			:host {
+				display: block;
+      }
+      *[hidden] {
+        display: none;
+      }
+		</style>
+
+
+		<iron-ajax id="conferencesRequest" on-response="_onConferencesResponse"></iron-ajax>
+		<iron-ajax id="schedulesRequest" on-response="_onSchedulesResponse"></iron-ajax>
+		<iron-ajax id="dailySchedulesRequest" on-response="_onDailySchedulesResponse"></iron-ajax>
+		<iron-ajax id="tracksRequest" on-response="_onTracksResponse"></iron-ajax>
+		<iron-ajax id="speakersRequest" on-response="_onSpeakersResponse"></iron-ajax>
+
+    <app-localstorage-document
+        id="conferencesDocument"
+        key="conferences"
+        data="{{conferences}}"></app-localstorage-document>
+    <app-localstorage-document
+        id="currentConferencesDocument"
+        key="currentConferences"
+        data="{{currentConferences}}"></app-localstorage-document>
+    <app-localstorage-document
+        id="schedulesDocument"
+        key="schedules"
+        data="{{schedules}}" log></app-localstorage-document>
+    <app-localstorage-document
+        id="dailySchedulesDocument"
+        key="dailySchedules"
+        data="{{dailySchedules}}"></app-localstorage-document>
+    <app-localstorage-document
+        id="talksDocument"
+        key="talks"
+        data="{{talks}}"></app-localstorage-document>
+    <app-localstorage-document
+        id="tracksDocument"
+        key="tracks"
+        data="{{tracks}}"></app-localstorage-document>
+    <app-localstorage-document
+        id="speakersDocument"
+        key="speakers"
+        data="{{speakers}}"></app-localstorage-document>
+    <app-localstorage-document
+        key="speakerByUuid"
+        data="{{speakersByUuid}}"></app-localstorage-document>
+    <app-localstorage-document
+        key="speakerByFirstLetter"
+        data="{{speakersByFirstLetter}}"></app-localstorage-document>
+
+
+	</template>
+  <script>
+    Polymer({
+      is: 'my-devoxx-data-grabber',
+
+      behaviors: [
+      ],
+
+      properties: {
+        name: {
+          type: String,
+          value: "devoxx-data-grabber",
+        },
+        selected: {
+          type: String,
+        },
+
+        conferences: {
+          type: Object,
+          notify: true,
+          value: {}
+        },
+        _conferences: {
+          type: Object,
+          value: {}
+        },
+
+        _currentConferences: {
+          type: Object,
+          value: {}
+        },
+        currentConferences: {
+          type: Object,
+          notify: true,
+          value: {}
+        },
+
+        schedules: {
+          type: Object,
+          value: {},
+          notify: true
+        },
+        dailySchedules: {
+          type: Object,
+          value: {},
+          notify: true
+        },
+        talks: {
+          type: Object,
+          value: {},
+          notify: true
+        },
+        tracks: {
+          type: Object,
+          value: {},
+          notify: true
+        },
+
+        speakers: {
+          type: Object,
+          value: {},
+          notify: true
+        },
+        speakersByUuid: {
+          type: Object,
+          value: {},
+          notify: true
+        },
+        speakersByFirstLetter: {
+          type: Object,
+          value: {},
+          notify: true
+        },
+
+        corsProxyPrefix: {
+          type: String,
+          value: "https://lostinbrittany.org/devoxx/api/"
+        },
+        serverRoot: {
+          type: String,
+          value: {
+            'be': 'cfp.devoxx.be',
+            'ma': 'cfp.devoxx.ma',
+            'fr': 'cfp.devoxx.fr',
+            'uk': 'cfp.devoxx.co.uk',
+            'pl': 'cfp.devoxx.pl',
+            'us': 'cfp.devoxx.us',
+          },
+        },
+        apiRoot: {
+          type: String,
+          value: "/api/conferences"
+        },
+
+      },
+
+      observers: [
+
+      ],
+
+      // *********************************************************************
+      // Lifecycle
+      // *********************************************************************
+
+
+      // *********************************************************************
+      // Observers
+      // *********************************************************************
+
+			// *********************************************************************
+      // Computed properties
+      // *********************************************************************
+
+      // *********************************************************************
+      // Action listeners
+      // *********************************************************************
+
+      // *********************************************************************
+      // Event listeners
+      // *********************************************************************
+      _onConferencesResponse: function(evt, ironRequest) {
+        var country = ironRequest.url.replace(this.corsProxyPrefix+"cfp.devoxx.","").replace("co.","").substring(0,2);
+        // console.debug("[my-devoxx-data-grabber] _onConferencesResponse for $s - ", country, ironRequest.response);
+
+        this._conferences[country] = ironRequest.response;
+
+        if (Object.keys(this._conferences).length == 6) {
+          this.conferences = JSON.parse(JSON.stringify(this._conferences));
+        }
+        console.debug("[my-devoxx-data-grabber] _onConferencesResponse for %s - conferences ", country, this._conferences);
+
+        var currentConferenceLink = ironRequest.response.links[0].href;
+        var currentConferenceId = currentConferenceLink.split('/')[currentConferenceLink.split('/').length -1];
+        var currentConferenceApiBase = this.corsProxyPrefix + this.serverRoot[country] + this.apiRoot+"/"+currentConferenceId;
+        this._currentConferences[country] = {id: currentConferenceId, apiBase: currentConferenceApiBase};
+
+
+        this.currentConferences = JSON.parse(JSON.stringify(this._currentConferences));
+				/*
+        if (Object.keys(this._currentConferences).length == 6) {
+          this.currentConferences = JSON.parse(JSON.stringify(this._currentConferences));
+          console.debug("[my-devoxx-data-grabber] _onConferencesResponse _currentConferences done"  );
+        }
+				*/
+        console.debug("[my-devoxx-data-grabber] _onConferencesResponse for %s - ", country, this._currentConferences);
+
+        // this._getSchedules(currentConferenceApiBase);
+        // this._getTracks(currentConferenceApiBase);
+        // this._getSpeakers(currentConferenceApiBase);
+      },
+
+      _onSchedulesResponse: function(evt, ironRequest) {
+        var country = ironRequest.url.replace(this.corsProxyPrefix+"cfp.devoxx.","").replace("co.","").substring(0,2);
+        console.debug("[my-devoxx-data-grabber] _onSchedulesResponse for %s - ", country, ironRequest.response);
+
+				var conferenceDays = [];
+        for (var i in ironRequest.response.links) {
+          var dayElements = ironRequest.response.links[i].href.split('/');
+          if (!dayElements[dayElements.length-1]) {
+            dayElements.pop();
+          }
+          conferenceDays.push({
+            day: dayElements[dayElements.length-1],
+            title: ironRequest.response.links[i].title
+          });
+        }
+
+        this.set([ "schedules", country ], conferenceDays);
+        console.debug("[my-devoxx-data-grabber] _onSchedulesResponse for %s - ", country, this.schedules, conferenceDays);
+
+        var apiBase = this.currentConferences[country].apiBase;
+
+
+        for (var i  in conferenceDays) {
+          console.debug("[my-devoxx-data-grabber] _getDailySchedules conferenceDays ", conferenceDays[i].day);
+          this._getDailySchedules(apiBase, conferenceDays[i].day);
+        }
+      },
+      _onDailySchedulesResponse: function(evt, ironRequest) {
+        var country = ironRequest.url.replace(this.corsProxyPrefix+"cfp.devoxx.","").replace("co.","").substring(0,2);
+        var day = ironRequest.url.split("/")[ironRequest.url.split("/").length-1];
+        if (!this.dailySchedules[country]) {
+          this.set( [ "dailySchedules", country], {});
+        }
+        this.set( [ "dailySchedules", country, day], this._reorganizeScheduleDayResponse(ironRequest.response));
+        console.debug("[my-devoxx-data-grabber] _onDailySchedulesResponse for %s and  %s", country, day, this.dailySchedules);
+        this._extractTalks(country,ironRequest.response);
+      },
+      _onTracksResponse: function(evt, ironRequest) {
+        var country = ironRequest.url.replace(this.corsProxyPrefix+"cfp.devoxx.","").replace("co.","").substring(0,2);
+        console.debug("[my-devoxx-data-grabber] _onTracksResponse for %s - ", country, ironRequest.response);
+
+        this.set( [ "tracks", country], ironRequest.response) ;
+      },
+      _onSpeakersResponse: function(evt, ironRequest) {
+        var country = ironRequest.url.replace(this.corsProxyPrefix+"cfp.devoxx.","").replace("co.","").substring(0,2);
+        console.debug("[my-devoxx-data-grabber] _onSpeakersResponse for %s - ", country, ironRequest.response);
+
+        this.set( [ "speakers",country ], ironRequest.response) ;
+        this._organizeSpeakers(ironRequest.response, country);
+      },
+      // *********************************************************************
+      // Other methods
+      // *********************************************************************
+
+      getConferences: function() {
+        for (var country in this.serverRoot) {
+          console.debug("[my-devoxx-data-grabber] getConferences country ", country)
+          this.$.conferencesRequest.url= this.corsProxyPrefix + this.serverRoot[country] + this.apiRoot;
+          this.$.conferencesRequest.generateRequest();
+        }
+      },
+      _getSchedules: function(apiBase) {
+        this.$.schedulesRequest.url = apiBase+"/schedules/";
+        this.$.schedulesRequest.generateRequest();
+      },
+      _getDailySchedules: function(apiBase, day) {
+        this.$.dailySchedulesRequest.url = apiBase+"/schedules/"+day;
+        this.$.dailySchedulesRequest.generateRequest();
+      },
+      _getTracks: function(apiBase) {
+        this.$.tracksRequest.url = apiBase+"/tracks";
+        this.$.tracksRequest.generateRequest();
+      },
+      _getSpeakers: function(apiBase) {
+        this.$.speakersRequest.url = apiBase+"/speakers";
+        this.$.speakersRequest.generateRequest();
+      },
+
+      _extractTalks: function(country,day) {
+        if (!this.talks[country]) {
+          this.talks[country] = {};
+        }
+        for (var i in day.slots) {
+          if (day.slots[i].talk) {
+            this.talks[country][day.slots[i].talk.id] = day.slots[i];
+          }
+        }
+        this.talks = JSON.parse(JSON.stringify(this.talks));
+        console.debug("[my-devoxx-data-grabber] _extractTalks", this.talks);
+      },
+
+      _organizeSpeakers: function(speakers, country) {
+				console.debug("[my-devoxx-data-grabber] _organizeSpeakers", speakers, country);
+				var speakersByUuid = {};
+				if (speakers) {
+					for (i in speakers) {
+						if (speakers[i].uuid) {
+							speakersByUuid[speakers[i].uuid] = speakers[i];
+						}
+					}
+					this.set([ "speakersByUuid", country], speakersByUuid);
+				}
+				console.debug("[my-devoxx-data-grabber] _organizeSpeakers", this.speakersByUuid);
+
+				var speakersByFirstLetter = {};
+				if (speakers) {
+					for (i in speakers) {
+						if (speakers[i].firstName) {
+							if (!speakersByFirstLetter[speakers[i].firstName[0].toUpperCase()]) {
+								speakersByFirstLetter[speakers[i].firstName[0].toUpperCase()] = [];
+							}
+							speakersByFirstLetter[speakers[i].firstName[0].toUpperCase()].push(speakers[i]);
+						}
+					}
+					this.set([ "speakersByFirstLetter", country], speakersByFirstLetter);
+				}
+				console.debug("[my-devoxx-data-grabber] _organizeSpeakers", this.speakersByFirstLetter);
+      },
+
+      _reorganizeScheduleDayResponse: function(scheduleDayResponse) {
+        var list = [];
+
+        // console.debug("[my-devoxx-data-grabber] _reorganizeScheduleDayResponse scheduleDayResponse", scheduleDayResponse);
+        for (var i in scheduleDayResponse.slots) {
+          var slotTime = scheduleDayResponse.slots[i].fromTime +"-"+scheduleDayResponse.slots[i].toTime;
+          var added = false;
+          for (var j in list) {
+            if (list[j].slotTime == slotTime) {
+              if (!list[j].items) {
+                list[j].items = [];
+              }
+              list[j].fromTime = scheduleDayResponse.slots[i].fromTime;
+              list[j].toTime = scheduleDayResponse.slots[i].toTime;
+              list[j].fromTimeMillis = scheduleDayResponse.slots[i].fromTimeMillis;
+              list[j].toTimeMillis = scheduleDayResponse.slots[i].toTimeMillis;
+              list[j].items.push(scheduleDayResponse.slots[i]);
+              if (scheduleDayResponse.slots[i].break) {
+                list[j].break = true;
+                list[j].breakName = scheduleDayResponse.slots[i].break.nameEN
+              }
+              if (scheduleDayResponse.slots[i].talk) {
+                list[j].talk = true;
+              }
+              added = true;
+            }
+          }
+          if (!added) {
+            var item = {};
+            item.index = list.length;
+            item.slotTime = slotTime;
+            item.fromTime = scheduleDayResponse.slots[i].fromTime;
+            item.toTime = scheduleDayResponse.slots[i].toTime;
+            item.fromTimeMillis = scheduleDayResponse.slots[i].fromTimeMillis;
+            item.toTimeMillis = scheduleDayResponse.slots[i].toTimeMillis;
+            item.items= [ scheduleDayResponse.slots[i] ];
+            if (scheduleDayResponse.slots[i].break) {
+              item.break = true;
+              item.breakName = scheduleDayResponse.slots[i].break.nameEN;
+            }
+            if (scheduleDayResponse.slots[i].talk) {
+              item.talk = true;
+            }
+            list.push(item);
+          }
+        }
+        // // console.debug("[my-devoxx-icons] _reorganizeScheduleDayResponse", list);
+        return list;
+      },
+
+      stringify: function(item) {
+        return JSON.stringify(item);
+      },
+    });
+  </script>
+</dom-module>

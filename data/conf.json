@@ -1,0 +1,86 @@
+{
+	"be": {
+		"talks": "250",
+		"capacity": "3500",
+		"date": "11/07/2016",
+		"description": "FROM 07 TO 11/11/2016",
+		"place": "Kinepolis, Anvers, Belgium",
+		"short_place": "Kinepolis",
+		"link": "https://devoxx.be/",
+		"assets": {
+			"background": "./img/background/be.jpg",
+			"icon": "./img/icon/splash_btn_be.png",
+			"logo": "img/logo/be.png"
+		}
+	},
+	"ma": {
+		"talks": "150",
+		"capacity": "1500",
+		"date": "11/01/2016",
+		"description": "FROM 01 TO 03/11/2016",
+		"place": "Le Studio des Arts Vivants, Casablanca, Morocco",
+		"short_place": "Studio des Arts Vivants",
+		"link": "http: //www.devoxx.ma/",
+		"assets": {
+			"background": "./img/background/ma.jpg",
+			"icon": "./img/icon/splash_btn_ma.png",
+			"logo": "img/logo/ma.png"
+		}
+	},
+	"fr": {
+		"talks": "200",
+		"capacity": "2800",
+		"date": "04/20/2016",
+		"description": "FROM 20 TO 22/04/2016",
+		"place": "Palais des Congrès, Porte Maillot, Paris, France",
+		"short_place": "Palais des Congrès",
+		"link": "https://www.devoxx.fr/",
+		"assets": {
+			"background": "./img/background/fr.jpg",
+			"icon": "./img/icon/splash_btn_fr.png",
+			"logo": "img/logo/fr.png"
+		}
+	},
+	"uk": {
+		"talks": "150",
+		"capacity": "1000",
+		"date": "06/08/2016",
+		"description": "FROM 08 TO 10/06/2016",
+		"place": "Business Design Centre, London, UK",
+		"short_place": "Business Design Centre",
+		"link": "http: //www.devoxx.co.uk/",
+		"assets": {
+			"background": "./img/background/uk1.jpg",
+			"icon": "./img/icon/splash_btn_uk.png",
+			"logo": "img/logo/uk.png"
+		}
+	},
+	"pl": {
+		"talks": "200",
+		"capacity": "2700",
+		"date": "06/22/2016",
+		"description": "FROM 22 TO 26/06/2016",
+		"place": "Ice Krakow Congress Centre, Kraków, Poland",
+		"short_place": "Ice Krakow Congress Centre",
+		"link": "http://devoxx.pl/",
+		"assets": {
+			"background": "./img/background/pl.jpg",
+			"icon": "./img/icon/splash_btn_pl.png",
+			"logo": "img/logo/pl.png"
+		}
+	},
+	"us": {
+		"talks": "200",
+		"capacity": "1000",
+		"date": "03/21/2017",
+		"description": "FROM 21 TO 23/03/2017",
+		"place": "San Jose Convention Center, San Jose, USA",
+		"short_place": "San Jose Convention Center",
+		"link": "https://devoxx.us/",
+		"assets": {
+			"background": "./img/background/us.jpg",
+			"icon": "./img/icon/splash_btn_usa.png",
+			"logo": "img/logo/usa.png"
+		}
+	}
+}

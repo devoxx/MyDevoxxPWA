@@ -1,0 +1,148 @@
+<!--
+@license MIT
+Copyright (c) 2016 Horacio "LostInBrittany" Gonzalez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+
+<link rel="import" href="../bower_components/paper-styles/color.html">
+
+<link rel="import" href="my-devoxx-data-grabber.html">
+<link rel="import" href="shared-styles.html">
+
+
+<dom-module id="my-devoxx">
+	<template>
+		<style include="shared-styles">
+			:host {
+				display: block;
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+			}
+			
+			iron-pages {
+				height: 100%;
+			}
+			
+			iron-pages > * {
+				height: 100%;
+			}
+		</style>
+
+    <my-devoxx-data-grabber id="dataGrabber"></my-devoxx-data-grabber>
+
+		<app-location route="{{route}}" use-hash-as-path></app-location>
+		<app-route route="{{route}}" pattern="/:page" data="{{routeData}}" tail="{{subroute}}"></app-route>
+
+		<iron-pages selected="[[page]]" attr-for-selected="name" fallback-selection="view404" role="main">
+			<my-devoxx-menu 
+          name="devoxx-menu" 
+          selected="[[page]]" 
+          on-country-chosen="_onCountryChosen"></my-devoxx-menu>
+			<my-devoxx-conference 
+          name="devoxx-conference" 
+          selected="[[page]]" 
+          subroute="[[subroute]]" 
+          on-country-chosen="_onCountryChosen" 
+          on-view-chosen="_onViewChosen" 
+          on-speaker-chosen="_onSpeakerChosen"
+          on-talk-chosen="_onTalkChosen"></my-devoxx-conference>
+      <my-devoxx-speaker 
+          name="devoxx-speaker" 
+          selected="[[page]]" 
+          subroute="[[subroute]]"
+          on-talk-chosen="_onTalkChosen"></my-devoxx-speaker>
+      <my-devoxx-talk 
+          name="devoxx-talk" 
+          selected="[[page]]" 
+          subroute="[[subroute]]"
+          on-speaker-chosen="_onSpeakerChosen"></my-devoxx-talk>
+			<my-view404 name="view404"></my-view404>
+		</iron-pages>
+	</template>
+
+	<script>
+    Polymer({
+      is: 'my-devoxx',
+
+      properties: {
+        page: {
+          type: String,
+          reflectToAttribute: true,
+          observer: '_pageChanged'
+        }
+      },
+
+      observers: [
+        '_routePageChanged(routeData.page)',
+      ],
+
+      // *********************************************************************
+      // Lifecycle
+      // *********************************************************************
+      ready: function() {
+        this.$.dataGrabber.getConferences();
+      },
+
+      // *********************************************************************
+      // Observers
+      // *********************************************************************
+
+      _routePageChanged: function(page) {
+        console.debug("[my-devoxx] _routePageChanged", page);
+        this.page = page || 'devoxx-menu';
+      },
+
+      _pageChanged: function(page) {
+        // Load page import on demand. Show 404 page if fails
+        var resolvedPageUrl = this.resolveUrl('./my-' + page + '.html');
+        this.importHref(resolvedPageUrl, null, this._showPage404, true);
+      },
+
+      // *********************************************************************
+      // Event listeners
+      // *********************************************************************
+      _onCountryChosen: function(evt, country) {
+        console.debug("[my-devoxx] _onCountryChosen", country);
+        var location = "#/devoxx-conference/"+country+"/";
+        window.history.pushState({}, null, location);
+        window.dispatchEvent(new CustomEvent('location-changed'));
+      },
+      _onViewChosen: function(evt, data) {
+        console.debug("[my-devoxx] _onViewChosen", data);
+        var location = "#/devoxx-conference/"+data.country+"/"+data.view+"/";
+        window.history.pushState({}, null, location);
+        window.dispatchEvent(new CustomEvent('location-changed'));
+      },
+      _onSpeakerChosen: function(evt, data) {
+        console.debug("[my-devoxx] _onSpeakerChosen", data);
+        var location = "#/devoxx-speaker/"+data.country+"/"+data.speaker+"/";
+        window.history.pushState({}, null, location);
+        window.dispatchEvent(new CustomEvent('location-changed'));
+      },
+      _onTalkChosen: function(evt, data) {
+        console.debug("[my-devoxx] _onTalkChosen", data);
+        var location = "#/devoxx-talk/"+data.country+"/"+data.id+"/";
+        window.history.pushState({}, null, location);
+        window.dispatchEvent(new CustomEvent('location-changed'));
+      },
+      _showPage404: function() {
+        this.page = 'view404';
+      },
+    });
+  </script>
+</dom-module>

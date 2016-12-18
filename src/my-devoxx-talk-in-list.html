@@ -1,0 +1,227 @@
+<!--
+@license MIT
+Copyright (c) 2016 Horacio "LostInBrittany" Gonzalez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+
+<link rel="import" href="../bower_components/paper-styles/paper-styles-classes.html">
+
+<dom-module is="my-devoxx-talk-in-list">
+	<template>
+		<style>
+			:host {
+				display: block;
+				margin-top: 2vh;
+				margin-bottom: 2vh;
+			}
+			
+			*[hidden] {
+				display: none;
+			}
+			
+			.trackIcon {
+				width: 10%;
+				height: 100%;
+				margin-right: 5%;
+				--iron-icon-width: 10%;
+				@apply(--layout-self-stretch);
+			}
+			
+			.trackTitle {
+				font-size: 0.75rem;
+				color: var(--paper-orange-900);
+			}
+			
+			.slotTitle {}
+			
+			.room,
+			.slotTime {
+				font-size: 0.75rem;
+				color: var(--paper-grey-500);
+			}
+			
+			.speakers {
+				@apply(--layout-horizontal);
+				@apply(--layout-wrap);
+			}
+			
+			.speaker {
+				@apply(--layout-horizontal);
+				@apply(--layout-center);
+				margin-right: 2.5%;
+				margin-top: 5px;
+				margin-bottom: 5px;
+			}
+			
+			.speakerName {
+				background-color: white;
+				border-radius: 10px;
+				padding: 5px 10px;
+				padding-left: 2.5rem;
+				margin-left: -2rem;
+				white-space: nowrap;
+			}
+			
+			.speakerAvatar {
+				width: 2.5rem !important;
+				height: 2.5rem !important;
+				border-radius: 1.25rem;
+				z-index: 2;
+			}
+		</style>
+
+		<div class="layout horizontal" >
+			<iron-icon class="trackIcon" src="[[_trackIcon]]" on-click="_goToTalk"></iron-icon>
+			<div class="layout vertical flex">
+				<div class="trackTitle" hidden$="[[!showTrack]]" on-click="_goToTalk"> 
+					[[_track.title]]
+				</div>
+				<div class="slotTitle" on-click="_goToTalk">
+					[[slot.talk.title]]
+				</div>
+				<div class="slotTime" hidden$="[[!showTtime]]" on-click="_goToTalk">
+					<iron-icon icon="schedule"></iron-icon> [[slot.day]] [[slot.fromTime]]
+				</div>
+				<div class="room" on-click="_goToTalk">
+					<iron-icon icon="room"></iron-icon> [[slot.roomName]]
+				</div>
+				<div class="speakers">
+					<template is="dom-repeat" items="[[slot.talk.speakers]]" as="speaker">
+						<div class="speaker">
+							<iron-image 
+                  class="speakerAvatar" 
+                  on-click="_goToSpeaker" 
+                  data-speaker$="[[speaker.link.href]]" 
+                  placeholder="[[placeholder]]"
+								  sizing="cover" 
+                  preload src="[[_speakerAvatar(speaker, speakers, speakers.*)]]"></iron-image>
+							<div class="speakerName" on-click="_goToSpeaker" data-speaker$="[[speaker.link.href]]">[[speaker.name]]</div>
+						</div>
+					</template>
+				</div>
+			</div>
+		</div>
+	</template>
+	<script>
+    Polymer({
+      is: 'my-devoxx-talk-in-list',
+      properties: {
+        slot: {
+          type: Object,
+        },
+        tracks: {
+          type: Array,
+        },
+        speakers: {
+          type: Array,
+        },
+        country: {
+          type: String,
+        },
+        conferenceApiRoot: {
+          type: String,
+        },
+        _track: {
+          type: Object,
+          computed: "_getTrack(tracks,slot)"
+        },
+        iconUrlRoot: {
+          type: String,
+        },
+        _trackIcon: {
+          type: String,
+          computed: "_getTrackIcon(slot,tracks,iconUrlRoot)"
+        },
+        showTrack: {
+          type: Boolean,
+          value: false
+        },
+        showTime: {
+          type: Boolean,
+          value: false
+        },
+        placeholder: {
+          type: String,
+          value: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4AsCCzopbAfhTAAACqVJREFUeNrNW3l0lNUV/71vZpKQBLJCIhgwkSIELLLLIkEFY4pSPRVPD4tH29MqoNVSFRWPCyqCHES0rRVxgUDQVqFFQXq0ClQBlaiASBO2mAgEEpKQCZnl+9779Y/5EhNkmcz3BnLnn5lvue/e++5+3whEGUimAMgDMBBALoBsAF0ApAKItR8LAKgBcBRAGYA9AIoBbBRC1Nl4IIRAuwWSLb8PJLmQ5GE6hyM2roHtmnGSIHkPySpGD6pJ/oGk+1ShX0jGBclHef7hMZIxF3r3p/LCw1Qn2iDauutCCJDsDOATAH0jFx4Q8mkEQQiItpLTEkoB5AkhKqMmgBbM3whgrSPNAaB8NRCmFzRcQGwKXJ4EHUo5QQjxXlsihmgj83MBPBwZywKqrhTY9TJQuhyGPAkYntA9GYBKvAwYcB/Q81aImE4AFASMSITwohDi3nCFINrA/BoAN0W048qC/Ph3cB98D/AIwJKgixAi5MMorZA5GAADEurapTB63gIHUf+/QojR4QhBhMn8xwDGtNln2MxzRS+4lBcUbqjMayAunw5eNAIuIULmYHqBvf+CUbIUonY3IIJQve8Fhs+BiFwTdgoh+kecQLUIc2tIqkhdtFU0iHwtleqf46koSZJKkaQMoVWkUoqhD2lV7aIszCZfS6L13ZuRLxyCrU5j/Fwnq1t73yVf70zr08dOy4g6wy9FUr41lOqVBEp/rdMw+XqkQrjR6cry9a4010+iSUVF68frgTqqI5/SLF5Aa9dSytr/UUqzhQBC2qCWd6Pc9oSOXKGgTT7AjvPHIg9zBP3VMIouB+44DAgDAGGBwJfz4f5mLuBJAt0egBLC9IPSgprwIYyMgXZOAMjDW4ENE2D8pgqCysYTEUi78JJn9QctVP9bR/JWpNz6FK1Dn9i2bpvEO1eRy7pTlhS11hTlo/xoOrk0kVbpP1qjWns9zZpSJ26oCY6ft/RWUVEWDaClzGayze0LKQsHNrFsX1et7N+qKSFfiaM8UU5SUVJRVn5Ba0+hDgGQ5O1n3X27sHEMSikGNz9uO3mb8De7UlnBUAhQipYMUgW9NM2TtpIokopmxUZaH/8+9JYKxQ1z9zJddUPgVL6bjcq2jdlaqiQBuIbcBQhAQEDVH4QsWAthuEEByKrPYbyRAazqC3dhDuRbg8FgA0DAfXEeVONxMEQUDADsMhiaCt8Yki+dafehs0RTLVTWX7yYUgYpqWidKKdc1ovSOtn8hDy8hfK1brRUkFSkdewrytp9LTRK6jIBkgyeyQTuiVa9Gjz0pa3gpLVyAC2zoTkpst0jze//Q7n3nebrAe+RaJbQ9/+kfLa7LVEB+WP6R+vQZzaLstUTimRw+4KQoBR17vhZfYGwmR8EYHvUGygApBWA2x172vu+2r2IS/kZzlPrM04IEXDbPyZFc6X6+nqUl5ej4vsyHK+pwfHqGjQ0eNHY2IhAIAiS8HjciItPRHpKR3TO7IasrItxaU4OMjIzEaWu8FKSU5s04DCAi3Rh3vPdHhTkXw+lJEjCNE0opdApOQkdO3VE59TO6NgxEXEdOsDjdoOGgGmaCPgDqDtRh+pjVaitqYVSshnn9Ltn4JHZs3UKwBJCeATJVADHtam5UsjqdjF8AT9i3B4YhgEhBFwuV/N32mFXGAJUDPXHWkejZsEFAgH0yc3Frp07UX/S66Rt9hNShRCG2x5a6NOrJa8iLT0d278qhmVZkFLC7/ejvr4efr8fZjAIAnAZBgy3C4YICQUCMIQBj8eDhIQExMfHw+VywePxwO12Y1D/K7Dhgw24vqBAF6mCZH83gAE6BbDw+YV4YfFieDweeDweAEBiYiLS09Md4R0xahS+/vprnQIAgCmGPa7SAkop1NXW4br8fO2ONDsnGxXlFbrR3mzYszptw5ImW9cNCfEJaGxs1I02x7AHldrng7rB52tEbFysdryGPaXV41WEo+HGWaG8vAIpSclo8Hp1ohUgW/SqnKa8UrJLejobGxt1VlUkyZFXDmdCbBzj3B5m97iEmzZu0oJeqwBIsn+/fvz7229rw3ew7CCzunbj1i1b6ff7aVkW31/7HhM6xLO6ulqLAE7qaoLk5+ezc1o6hwwa3KocdgJX542h3+fjnj17OHrkKC56/nmS5Mz7/shpd97pGL9hn8xwDIFAAN/u2IlPt3yGpKQk6OhgrF+3DhMnTkRsXBzumXE3/v3Rh6g6VoWysjKMvW4cSktKHfttA6FjKZocINCrVy/MmzcPpaWOicOzz8zFtBnTQQJZWVmIi4tD165d4fP5cKK2DvEJ8Y7JNhA6k+O81xQTg0AgiOLt2zFoyGD89vY7HIXFX910M5YVLreFC1QeOYLCZcuxatUq9OnTB2tWr8bgwUOckn0AJJ/S5bDWvLuaOd17kCSvyRtDpSLzA3OeeJJFK1Y2RxaSNC2Tmz7ZSL/fzwP79jMhrgN9Pp9TkheA5E06o8Cl2Tmc9cCD9Pv9LLguv83vPzzrIb60+EWSZF1dHR99ZHar+yUlJbwkqzvnz31WB7l9QTJZpwBOnDjBtOQUbtu2jZs2buSvJ94a1nvFxcUcOXw4P1i/vvna7t27+fKf/8Kygwc564EHOO6aa+kxXHzm6ae1BC4AcAsh6khWAsjU4Qs6deqEvy1Zgl+OvxGHq47ist69cdvkKaiqrkZmRgYu7dkTWT26wzJNVFZWYve3u1FTU4OxY8di0+bNcLndzbh+KK9A54wumP/cc9iw7gPMeXoOCleuaO4S6YCm1YoAzNSF9JaJt2BVURHSkpIx6qqrsHbd+xAAao4fx5HKSjR4vRBCYHReHno82AMxMac/7HXo8CHkZOfAMk3M/NNMTJk6VWcaXEQSbttTr9QpAAB4d81q7PjmG4wv+AV8jY2Ij49HaloaUtPSwsZxtPIohg27ElXHqpCUnKy7vLhLCAFDCAEhxFc622JN0P+KKxyVxrW1tcjMzMTOHTuQk5OtkzRLCNHQajQGYE7U2uER5gMNXi9+qChHRUUFRowcqZOkB5toaimAv6KdgSUlFi16AZMmT9bZEldCiEVN+NwtUlmL5OMAnmwvAkhMTMTSV1/Fli8+14l2ScsZg3GKms5rTybg8biRm5uLvrm5Ond/WkttajUeF0IEAdzWHpgPaUBHpKSk6CRnWlj0kCzRkWoNGzqUV+eNac7n2woH9h9gfGwH7t+3Twc5FWHvGMlMp6uNGZ3HEcOGO6Z6ReEKpiYls7Ky0mljTbRJG50ck5twww0cNGCQtvri4VkPsWtGJr1eb8RH6iMyRZKL27rSlEmT+fN+/fT/KWDyZOZe1jsScypy5LxIbg53pRnTprNv7z5RO9UwYfwNHD50WFte+UyLBye541wrmaYZlZ0/FfLHjeP+/fvDqrDDGwyEIQT7xPhWAFeG+3w0IYw1tgghwsqdz1mp2MxDCDEcwBvhNkejCedYY1W4zEcq/QLdwxSNM6Q2NwxEhEJwIXSYOhXtA34A0B2hUx9tHo5GAlIIkQbgDgDBC8i4AnCnECIrEuZ1msVLJIPnUd0lyZed1hrREMT9JANRZNwkObPdMX6avCGWZKFNsHLo2BTJFSQT2y3j5yqDSfYnuYDkvhZMnekvRPvtZ/vqKKnPBf8Hh4Y2uR2rMxYAAAAASUVORK5CYII="
+        }
+      },
+      observers: [
+      ],
+
+      // *********************************************************************
+      // Observers
+      // *********************************************************************
+
+      // *********************************************************************
+      // Computed properties
+      // *********************************************************************
+      _getTrack:function() {
+        if (! this.slot.talk) {
+          return null;
+        }
+        for (var i in this.tracks) {
+          if (this.tracks[i].id == this.slot.talk.trackId) {
+            return this.tracks[i];
+          }
+        }
+      },
+      _getTrackIcon: function() {
+        if (! this.slot.talk) {
+          return null;
+        }
+         for (var i in this.tracks) {
+           if (this.tracks[i].id == this.slot.talk.trackId) {
+             return this.iconUrlRoot+this.tracks[i].imgsrc;
+           }
+         }
+      },
+      // *********************************************************************
+      // Action listeners
+      // *********************************************************************
+      _goToTalk: function(evt) {
+        console.debug("[my-devoxx-talk-in-list] _goToTalk", this.slot.talk.id);
+        this.fire("talk-chosen", { country: this.country, id: this.slot.talk.id}, {bubbles: true});
+      },
+
+      _goToSpeaker: function(evt) {
+        var uuid = evt.target.getAttribute("data-speaker").split('/')[evt.target.getAttribute("data-speaker").split('/').length-1];
+        console.debug("[my-devoxx-talk-in-list] _goToSpeaker", uuid);
+        this.fire("speaker-chosen", { country: this.country, speaker: uuid });
+      },
+      // *********************************************************************
+      // Event listeners
+      // *********************************************************************
+
+
+      // *********************************************************************
+      // Other methods
+      // *********************************************************************
+      _speakerAvatar: function(speaker) {
+        if (!this.speakers || Object.keys(this.speakers).length == 0) {
+          return this.placeholder;
+        }
+        console.debug("[my-devoxx-talk-in-list] _speakerAvatar", this.speakers.length );
+        var uuid = speaker.link.href.split('/')[speaker.link.href.split('/').length-1];
+        if (!uuid) {
+          console.error("[my-devoxx-talk-in-list] _speakerAvatar", speaker );
+          return this.placeholder;
+        }
+        if (!this.speakers[uuid]) {
+          console.error("[my-devoxx-talk-in-list] _speakerAvatar", uuid );
+          return this.placeholder;
+        }
+        return this.speakers[uuid].avatarURL;
+      },
+    });
+  </script>
+</dom-module>

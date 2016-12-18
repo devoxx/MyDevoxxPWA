@@ -1,0 +1,470 @@
+<!--
+@license MIT
+Copyright (c) 2016 Horacio "LostInBrittany" Gonzalez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+
+<link rel="import" href="../bower_components/granite-countdown/granite-countdown.html">
+
+<link rel="import" href="shared-styles.html">
+
+
+<dom-module is="my-devoxx-menu">
+
+	<template>
+		<style include="shared-styles">
+			:host {
+				background-color: var(--app-background-color);
+				font-size: 100%;
+			}
+
+			a {
+				text-decoration: none;
+			}
+			
+			.container {
+				@apply(--layout-vertical);
+				@apply(--layout-center);
+				width: 100%;
+				height: 100%;
+			}
+			
+			.container::before {
+				content: "";
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				z-index: 0;
+				background: rgba(44, 38, 66, 1) url(../images/overlay.png) repeat;
+				opacity: 0.8;
+			}
+			
+			.container.be {
+				background-image: url("../images/background/be.jpg");
+				background-size: cover;
+			}
+			
+			.container.ma {
+				background-image: url("../images/background/ma.jpg");
+				background-size: cover;
+			}
+			
+			.container.fr {
+				background-image: url("../images/background/fr.jpg");
+				background-size: cover;
+			}
+			
+			.container.uk {
+				background-image: url("../images/background/uk.jpg");
+				background-size: cover;
+			}
+			
+			.container.pl {
+				background-image: url("../images/background/pl.jpg");
+				background-size: cover;
+			}
+			
+			.container.us {
+				background-image: url("../images/background/us.jpg");
+				background-size: cover;
+			}
+			
+			.logo {
+				z-index: 0;
+				@apply(--layout-vertical);
+				@apply(--layout-center);
+				margin-bottom: 40px;
+			}
+			
+			.logo > .devoxx {
+				width: 80vw;
+				max-width: 600px;
+			}
+			
+			.logo > .country {
+				font-size: 2rem;
+				font-family: "Pirulen";
+				color: var(--app-secondary-color);
+			}
+			/*MAIN CIRCLE*/
+			
+			.circle {
+				z-index: 0;
+				position: relative;
+				margin-top: 30px;
+				margin-bottom: 30px;
+				width: 200px;
+				height: 200px;
+				border-radius: 50%;
+				background: url('../images/circle.png');
+				background-size: cover;
+				-webkit-transition: all 0.5s ease;
+				-moz-transition: all 0.5s ease;
+				-ms-transition: all 0.5s ease;
+				-o-transition: all 0.5s ease;
+				transition: all 0.5s ease;
+				background-size: 140px;
+				background-repeat: no-repeat;
+				background-position: 30px 30px;
+				background-color: #FF9800;
+			}
+
+
+			/*LITTLE CIRCLES*/
+			
+			.circle li {
+				position: absolute;
+				width: 80px;
+				height: 80px;
+				top: -40px;
+				left: -40px;
+				border-radius: 50%;
+				list-style-type: none;
+				text-align: center;
+				background-position: center center;
+				background-size: contain;
+				background-repeat: no-repeat;
+			}
+			
+			.circle li.be {
+				background-image: url(../images/icon/splash_btn_be.png);
+				-webkit-transform: translate(100px, -20px);
+				-moz-transform: translate(100px, -20px);
+				-ms-transform: translate(100px, -20px);
+				-o-transform: translate(100px, -20px);
+				transform: translate(100px, -20px);
+			}
+			
+			.circle li.ma {
+				background-image: url(../images/icon/splash_btn_ma.png);
+				-webkit-transform: translate(200px, 40px) rotate(60deg);
+				-moz-transform: translate(200px, 40px) rotate(60deg);
+				-ms-transform: translate(200px, 40px) rotate(60deg);
+				-o-transform: translate(200px, 40px) rotate(60deg);
+				transform: translate(200px, 40px) rotate(60deg);
+			}
+			
+			.circle li.fr {
+				background-image: url(../images/icon/splash_btn_fr.png);
+				-webkit-transform: translate(200px, 170px) rotate(120deg);
+				-moz-transform: translate(200px, 170px) rotate(120deg);
+				-ms-transform: translate(200px, 170px) rotate(120deg);
+				-o-transform: translate(200px, 170px) rotate(120deg);
+				transform: translate(200px, 170px) rotate(120deg);
+			}
+			
+			.circle li.uk {
+				background-image: url(../images/icon/splash_btn_uk.png);
+				-webkit-transform:  translate(100px, 220px) rotate(180deg);
+				-moz-transform:  translate(100px, 220px) rotate(180deg);
+				-ms-transform:  translate(100px, 220px) rotate(180deg);
+				-o-transform:  translate(100px, 220px) rotate(180deg);
+				transform: translate(100px, 220px) rotate(180deg);
+			}
+			
+			.circle li.pl {
+				background-image: url(../images/icon/splash_btn_pl.png);
+				-webkit-transform: translate(00px, 170px) rotate(240deg);
+				-moz-transform: translate(00px, 170px) rotate(240deg);
+				-ms-transform: translate(00px, 170px) rotate(240deg);
+				-o-transform: translate(00px, 170px) rotate(240deg);
+				transform: translate(00px, 170px) rotate(240deg);
+			}
+			
+			.circle li.us {
+				background-image: url(../images/icon/splash_btn_usa.png);
+				-webkit-transform: translate(00px, 40px) rotate(300deg);
+				-moz-transform: translate(00px, 40px) rotate(300deg);
+				-ms-transform: translate(00px, 40px) rotate(300deg);
+				-o-transform: translate(00px, 40px) rotate(300deg);
+				transform: translate(00px, 40px) rotate(300deg);
+			}
+			
+			.circle li img {
+				width: 80px;
+				position: relative;
+				cursor: pointer;
+			}
+			
+			.circle.be {
+				-webkit-transform: none;
+				-moz-transform: none;
+				-ms-transform: none;
+				-o-transform: none;
+				transform: none;
+			}
+			
+			.circle.ma {
+				-webkit-transform: rotate(-60deg);
+				-moz-transform: rotate(-60deg);
+				-ms-transform: rotate(-60deg);
+				-o-transform: rotate(-60deg);
+				transform: rotate(-60deg);
+			}
+			
+			.circle.fr {
+				-webkit-transform: rotate(-120deg);
+				-moz-transform: rotate(-120deg);
+				-ms-transform: rotate(-120deg);
+				-o-transform: rotate(-120deg);
+				transform: rotate(-120deg);
+			}
+			
+			.circle.uk {
+				-webkit-transform: rotate(180deg);
+				-moz-transform: rotate(180deg);
+				-ms-transform: rotate(180deg);
+				-o-transform: rotate(180deg);
+				transform: rotate(180deg);
+			}
+			
+			.circle.pl {
+				-webkit-transform: rotate(120deg);
+				-moz-transform: rotate(120deg);
+				-ms-transform: rotate(120deg);
+				-o-transform: rotate(120deg);
+				transform: rotate(120deg);
+			}
+			
+			.circle.us {
+				-webkit-transform: rotate(60deg);
+				-moz-transform: rotate(60deg);
+				-ms-transform: rotate(60deg);
+				-o-transform: rotate(60deg);
+				transform: rotate(60deg);
+			}
+			
+			.details {
+				z-index: 0;
+				margin-top: 40px;
+				@apply(--layout-vertical);
+				@apply(--layout-center);
+				font-family: "Pirulen";
+				color: var(--app-primary-color);
+			}
+
+			.details .btnPanel {
+
+				@apply(--layout-horizontal);
+				@apply(--layout-center-justified);
+			}
+			
+			.details .btn_go {
+				width: 30vw;
+				max-width: 400px;
+				margin-top: 20px;
+				margin-bottom: 20px;
+				background-color: var(--app-secondary-color);
+				color: var(--app-primary-color);
+    		text-align: center;
+			}
+			
+			.details .btn_site {
+				width: 30vw;
+				max-width: 400px;
+				margin-top: 20px;
+				margin-bottom: 20px;
+				background-color: var(--paper-blue-500);
+				color: var(--app-primary-color);
+    		text-align: center;
+			}
+
+			.metrics {
+				@apply(--layout-horizontal);
+				@apply(--layout-center);
+				@apply(--layout-wrap);
+			}
+			
+			granite-countdown {
+				font-size: 0.75rem;
+				color: var(--app-primary-color);
+				padding-top: 0.5rem;
+				--granite-countdown-digits: {
+					color: var(--app-background-color);
+					background-color: var(--app-primary-color);
+				}
+			}
+			@media (max-width: 640px) {
+				.menu {				
+					-webkit-transform: scale(0.75);
+					-moz-transform: scale(0.75);
+					-ms-transform: scale(0.75);
+					-o-transform: scale(0.75);
+					transform: scale(0.75);				
+				}			
+			}
+			@media (max-width: 410px) {
+				.logo {
+					margin-bottom: 20px;
+				}
+				.circle {
+					margin-top: 20px;
+					margin-bottom: 20px;
+				}
+				.details .btn_go {
+					margin-top: 20px;
+					margin-bottom: 20px;
+				}
+				granite-countdown {
+					font-size: 0.5rem;
+				}
+			}
+		</style>
+		<div class$="container {{country}}">
+
+			<div class="logo">
+				<img class="devoxx" src="../images/devoxx.svg" alt="Devoxx">
+				<iron-pages class="country" selected="[[country]]" attr-for-selected="name" fallback-selection="belgium">
+					<div name="be">Belgium</div>
+					<div name="fr">France</div>
+					<div name="ma">Morocco</div>
+					<div name="uk">United Kingdom</div>
+					<div name="pl">Poland</div>
+					<div name="us">USA</div>
+				</iron-pages>
+			</div>
+
+			<div class="menu">
+				<div class$="circle {{country}}">
+					<ul>
+						<li class="be" data-country="be" title="Devoxx Belgium" on-tap="_chooseCountry"></li>
+						<li class="ma" data-country="ma" title="Devoxx Morocco" on-tap="_chooseCountry"></li>
+						<li class="fr" data-country="fr" title="Devoxx France" on-tap="_chooseCountry"></li>
+						<li class="uk" data-country="uk" title="Devoxx UK" on-tap="_chooseCountry"></li>
+						<li class="pl" data-country="pl" title="Devoxx Poland" on-tap="_chooseCountry"></li>
+						<li class="us" data-country="us" title="Devoxx USA" on-tap="_chooseCountry"></li>
+					</ul>
+				</div>
+			</div>
+
+			<template is="dom-if" if="{{infoOnCurrentConf}}">
+				<div class="details">
+					<div class="description">{{_currentConf.description}}</div>
+					<div class="place">{{_currentConf.short_place}}</div>
+					<div class="btnPanel">
+						<paper-button class="btn_go" on-click="_goToCountry" raised>Schedule</paper-button>
+						<a href$="[[_currentConf.link]]" target='_blank'><paper-button class="btn_site"raised>Website</paper-button></a>
+					</div>
+					<div class="metrics">
+						<template is="dom-if" if="{{!_hasPassed(_currentConf)}}">
+							<granite-countdown label="Days" value="{{_getDays(_currentConf)}}" digits="4"></granite-countdown>
+						</template>
+						<granite-countdown label="Talks" value="{{_currentConf.talks}}" digits="4"></granite-countdown>
+						<granite-countdown label="Capacity" value="{{_currentConf.capacity}}" digits="4"></granite-countdown>
+					</div>
+				</div>
+			</template>
+		</div>
+
+
+		<iron-ajax url="../data/conf.json" on-response="_loadConfs" auto></iron-ajax>
+	</template>
+
+
+	<script>
+      Polymer({
+        is: "my-devoxx-menu",
+
+        properties: {
+          country: {
+            type: String,
+            value: "be"
+          },
+          confs: {
+            type: Object
+          },
+          infoOnCurrentConf: {
+            type: Boolean,
+            computed: "_hasInfoOnCurrentConf(country, confs)"
+          },
+          _currentConf: {
+            type: Object,
+            computed: "_getCurrentConf(country, confs)"
+          },
+        },
+
+        observers: [
+        ],
+
+        // *********************************************************************
+        // Observers
+        // *********************************************************************
+
+        // *********************************************************************
+        // Computed properties
+        // *********************************************************************
+        _hasInfoOnCurrentConf: function() {
+          return (this.confs && this.country && this.country in this.confs);
+        },
+        _getCurrentConf: function() {
+          if (!this.confs || !this.country) {
+            return null;
+          }          
+          return this.confs[this.country];
+        },
+
+        // *********************************************************************
+        // Action listeners
+        // *********************************************************************
+        _chooseCountry: function(evt) {
+          console.debug("[my-devoxx-menu] _chooseCountry", evt.target.getAttribute('data-country'));
+          this.country =  evt.target.getAttribute('data-country');
+        },
+				_goToCountry: function(evt) {
+					this.fire('country-chosen', this.country  );
+				},
+
+        // *********************************************************************
+        // Event listeners
+        // *********************************************************************
+        _loadConfs: function(evt, ironRequest) {
+          // console.debug("[my-devoxx-menu] _loadConfs", ironRequest.response);
+          this.confs = ironRequest.response;
+        },
+
+        // *********************************************************************
+        // Other methods
+        // *********************************************************************
+        _getDays: function(conf) {
+
+          function parseDate(str) {
+              var mdy = str.split('/')
+              return new Date(mdy[2], mdy[0]-1, mdy[1]);
+          }
+          var now = new Date();
+
+          var days = 0;
+					console.debug("[my-devoxx-menu] _getDays - date", conf.date);
+          if (now < parseDate(conf.date)) {
+            days = Math.round((parseDate(conf.date) - now)/(1000*60*60*24));
+          }
+          return days;
+        },
+        _hasPassed: function(conf) {
+          function parseDate(str) {
+            var mdy = str.split('/')
+            return new Date(mdy[2], mdy[0]-1, mdy[1]);
+          }
+          var now = new Date();
+
+          return (now > parseDate(conf.date));
+        }
+      });
+    </script>
+
+</dom-module>
