@@ -1,25 +1,39 @@
 # My Devoxx - PWA version
 
-This is the Progressive Web App version of the My Devoxx application, done 
-with Polymer.
+This is the Progressive Web App version of the My Devoxx application, done with Polymer.
 
-### Setup
+## Getting Started
 
-##### Prerequisites
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
-Install [polymer-cli](https://github.com/Polymer/polymer-cli):
+### Prerequisites
+
+My Devoxx is a Progressive Web app that uses [Polymer](https://www.polymer-project.org). So first you need to install [polymer-cli](https://github.com/Polymer/polymer-cli):
 
     npm install -g polymer-cli
 
-### Start the development server
+We also need [Bower](https://bower.io/) installed :
 
-This command serves the app at `http://localhost:8080` and provides basic URL
-routing for the app:
+    npm install -g bower
+
+### Installing
+
+To have the development environment running,  you need to install all the dependencies: 
+
+    bower install
+
+
+And then start the server. This command serves the app at `http://localhost:8080` and provides basic URL routing for the app:
 
     polymer serve --open
 
+## Running the tests
 
-### Build
+## Development
+
+Coding styles are described in the `.editorconfig` file.
+
+## Build
 
 This command performs HTML, CSS, and JS minification on the application
 dependencies, and generates a service-worker.js file with code to pre-cache the
