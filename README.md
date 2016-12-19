@@ -33,6 +33,13 @@ And then start the server. This command serves the app at `http://localhost:8080
 
 Coding styles are described in the `.editorconfig` file.
 
+## Architecture
+
+The My Devoxx application is a front-end that talks to several back-ends : 
+
+* Devoxx CFP : the call for paper application gives a set of APIs that give information about speakers, talks, schedules...
+* Devoxx Track Lead : the lead application gives a set of APIs to allow attendees to scan each other
+
 ## Build
 
 This command performs HTML, CSS, and JS minification on the application
